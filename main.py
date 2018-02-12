@@ -69,6 +69,7 @@ parser.add_argument('-e', '--evaluate', type=str, metavar='FILE',
 parser.add_argument('--seed', default=123, type=int,
                     help='random seed (default: 123)')
 
+
 def main():
     global args, best_prec1
     best_prec1 = 0
@@ -245,8 +246,9 @@ def forward(data_loader, model, criterion, epoch=0, training=True, optimizer=Non
         # compute output
         output = model(input_var)
         #params = model.gather_params()
-        params_norm = 0.5 * sum([p.norm() ** 2 for p in model.module.fc.parameters()])
-        loss = criterion(output, target_var) + params_norm*1e-4
+        params_norm = 0.5 * \
+            sum([p.norm() ** 2 for p in model.module.fc.parameters()])
+        loss = criterion(output, target_var) + params_norm * 1e-4
 
         if type(output) is list:
             output = output[0]

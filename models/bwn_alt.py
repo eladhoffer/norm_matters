@@ -64,24 +64,12 @@ class StochasticWeightNorm(object):
         self.noise_std = noise_std
 
     def compute_weight(self, module):
-        # print('compute params for %s' % str(module))
 
-        g = getattr(module, self.name + '_g')
         v = getattr(module, self.name + '_v')
-        if module.training and self.noise_std > 0:
-            # g = shake_shake_noise(g, self.noise_std)
-            g = g * Variable(g.data.new(g.size()).normal_(1, self.noise_std))
-        # v = v - _mean(v, self.dim)
-        # v = v.renorm(p=2, dim=self.dim, maxnorm=1)
-        # return v * g
-        pre_norm = getattr(module, self.name + '_g_prenorm')
-        norm = g.norm()
-        
-        g = (Variable(pre_norm) / norm) * g
-        
-        #print(g.data.norm())
-        return v * (g / _norm(v, self.dim))
-        # return (v - _mean(v, self.dim)) * (g / _norm(v, self.dim))
+        #pre_norm = getattr(module, self.name + '_v_prenorm')
+        pre_norm = Variable(getattr(module, self.name + '_v_prenorm'), requires_grad=False)
+
+        return v * (pre_norm / _norm(v, self.dim))
 
     @staticmethod
     def apply(module, name, dim, p, noise_std):
@@ -91,16 +79,9 @@ class StochasticWeightNorm(object):
 
         # remove w from parameter list
         del module._parameters[name]
-
-        # add g and v as new parameters and express w as g/||v|| * v
-        module.register_parameter(
-            name + '_g', Parameter(_norm(weight, dim, p=p).data))
-
-        g = getattr(module, name + '_g')
         module.register_buffer(
-            name + '_g_prenorm', torch.Tensor([g.data.norm()]))
-        pre_norm = getattr(module, name + '_g_prenorm')
-        print(pre_norm)
+            name + '_v_prenorm', torch.Tensor([_norm(weight, dim, p=p).data.mean()]))
+        pre_norm = getattr(module, name + '_v_prenorm')
         module.register_parameter(name + '_v', Parameter(weight.data))
         setattr(module, name, fn.compute_weight(module))
 
@@ -108,14 +89,13 @@ class StochasticWeightNorm(object):
         module.register_forward_pre_hook(fn)
 
         def gather_normed_params(self, memo=None, param_func=lambda s: fn.compute_weight(s)):
-            return gather_params(self, memo, param_func)
+            return 0
         module.gather_params = gather_normed_params
         return fn
 
     def remove(self, module):
         weight = self.compute_weight(module)
         delattr(module, self.name)
-        del module._parameters[self.name + '_g']
         del module._parameters[self.name + '_v']
         module.register_parameter(self.name, Parameter(weight.data))
 
@@ -123,7 +103,7 @@ class StochasticWeightNorm(object):
         setattr(module, self.name, self.compute_weight(module))
 
 
-def weight_norm(module, name='weight', dim=0, p=2, noise_std=0.1):
+def weight_norm(module, name='weight', dim=0, p=2, noise_std=0):
     r"""Applies weight normalization to a parameter in the given module.
 
     .. math::
