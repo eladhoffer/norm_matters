@@ -88,7 +88,7 @@ def main():
                   resume=args.resume is not '')
     results_path = os.path.join(save_path, 'results')
     results = ResultsLog(
-        results_path, title='Training Results - %s' % args.save)
+        results_path, title='Training Results - %s' % args.save, params=args)
 
     logging.info("saving to %s", save_path)
     logging.debug("run arguments: %s", args)

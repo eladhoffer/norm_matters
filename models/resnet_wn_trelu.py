@@ -3,7 +3,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 import math
 from .bwn import weight_norm as wn
-
+from .trelu import TReLU
 __all__ = ['resnet_wn_trelu']
 
 p = 2
@@ -29,7 +29,7 @@ class BasicBlock(nn.Module):
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = TReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
         self.downsample = downsample
         self.stride = stride
@@ -64,7 +64,7 @@ class Bottleneck(nn.Module):
                                   padding=1, bias=True), p=p)
         self.conv3 = wn(nn.Conv2d(planes, planes * 4,
                                   kernel_size=1, bias=True), p=p)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = TReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
 
@@ -134,7 +134,7 @@ class ResNet_WN_imagenet(ResNet_WN):
         self.inplanes = 64
         self.conv1 = wn(nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                   bias=True), p=p)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = TReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
@@ -163,7 +163,7 @@ class ResNet_WN_cifar10(ResNet_WN):
         n = int((depth - 2) / 6)
         self.conv1 = wn(nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1,
                                   bias=True), p=p)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = TReLU(inplace=True)
         self.maxpool = lambda x: x
         self.layer1 = self._make_layer(block, 16, n)
         self.layer2 = self._make_layer(block, 32, n, stride=2)
