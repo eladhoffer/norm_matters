@@ -4,8 +4,7 @@ import torchvision.transforms as transforms
 import math
 from .bwn import weight_norm as wn
 
-from .mean_bn import MeanBN
-__all__ = ['resnet_wn']
+__all__ = ['resnet_wn_trelu']
 
 p = 2
 
@@ -13,7 +12,7 @@ p = 2
 def conv3x3(in_planes, out_planes, stride=1):
     "3x3 convolution with padding"
     return wn(nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                        padding=1, bias=False), p=p)
+                        padding=1, bias=True), p=p)
 
 
 def init_model(model):
@@ -21,8 +20,6 @@ def init_model(model):
         if isinstance(m, nn.Conv2d):
             n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
             m.weight.data.normal_(0, math.sqrt(2. / n))
-        elif isinstance(m, MeanBN):
-            # m.weight.data.fill_(1)
             m.bias.data.zero_()
 
 
@@ -32,10 +29,8 @@ class BasicBlock(nn.Module):
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
-        self.bn1 = MeanBN(planes)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
-        self.bn2 = MeanBN(planes)
         self.downsample = downsample
         self.stride = stride
 
@@ -64,14 +59,11 @@ class Bottleneck(nn.Module):
     def __init__(self, inplanes, planes, stride=1, downsample=None):
         super(Bottleneck, self).__init__()
         self.conv1 = wn(nn.Conv2d(inplanes, planes,
-                                  kernel_size=1, bias=False), p=p)
-        self.bn1 = MeanBN(planes)
+                                  kernel_size=1, bias=True), p=p)
         self.conv2 = wn(nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                                  padding=1, bias=False), p=p)
-        self.bn2 = MeanBN(planes)
+                                  padding=1, bias=True), p=p)
         self.conv3 = wn(nn.Conv2d(planes, planes * 4,
-                                  kernel_size=1, bias=False), p=p)
-        self.bn3 = MeanBN(planes * 4)
+                                  kernel_size=1, bias=True), p=p)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
@@ -80,15 +72,12 @@ class Bottleneck(nn.Module):
         residual = x
 
         out = self.conv1(x)
-        out = self.bn1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
-        out = self.bn2(out)
         out = self.relu(out)
 
         out = self.conv3(out)
-        out = self.bn3(out)
 
         if self.downsample is not None:
             residual = self.downsample(x)
@@ -109,8 +98,7 @@ class ResNet_WN(nn.Module):
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
                 wn(nn.Conv2d(self.inplanes, planes * block.expansion,
-                             kernel_size=1, stride=stride, bias=False), p=p),
-                MeanBN(planes * block.expansion),
+                             kernel_size=1, stride=stride, bias=True), p=p),
             )
 
         layers = []
@@ -123,7 +111,6 @@ class ResNet_WN(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
-        x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
 
@@ -146,8 +133,7 @@ class ResNet_WN_imagenet(ResNet_WN):
         super(ResNet_WN_imagenet, self).__init__()
         self.inplanes = 64
         self.conv1 = wn(nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
-                                  bias=False), p=p)
-        self.bn1 = MeanBN(64)
+                                  bias=True), p=p)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
@@ -176,8 +162,7 @@ class ResNet_WN_cifar10(ResNet_WN):
         self.inplanes = 16
         n = int((depth - 2) / 6)
         self.conv1 = wn(nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1,
-                                  bias=False), p=p)
-        self.bn1 = MeanBN(16)
+                                  bias=True), p=p)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = lambda x: x
         self.layer1 = self._make_layer(block, 16, n)
@@ -199,7 +184,7 @@ class ResNet_WN_cifar10(ResNet_WN):
         ]
 
 
-def resnet_wn(**kwargs):
+def resnet_wn_trelu(**kwargs):
     num_classes, depth, dataset = map(
         kwargs.get, ['num_classes', 'depth', 'dataset'])
     if dataset == 'imagenet':
