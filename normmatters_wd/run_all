@@ -1,0 +1,28 @@
+#!/bin/bash
+
+ver=1
+reproduce="--seed 2019 --num_workers 0"
+
+#####
+## Norm Matters
+#####
+
+
+# Reproduce WD on
+logfname="normmatters_v${ver}_vgg11_ref80_wdon"
+CUDA_VISIBLE_DEVICES=0,1 python main.py --logname ${logfname} --nn_arch vgg11 --num_epochs 80 ${reproduce} --optimizer sgd_wd0_0005_lr0_1_momentum0_9 --save_conv_channels_norms
+
+
+# Reproduce WD off (except last layer)
+logfname="normmatters_v${ver}_vgg11_ref80_wdoff"
+CUDA_VISIBLE_DEVICES=0,1 python main.py --logname ${logfname} --nn_arch vgg11 --num_epochs 80 ${reproduce} --optimizer sgd_lastlayerwd0_0005_otherlayerswd0_lr0_1_momentum0_9 --save_conv_channels_norms
+
+# Reproduce WD on mimicking with step size adjustments (WD off except last layer) (based on [WD on] norms - provide the file *.conv_norms.pkl produced by WD on training with the same seed to --wd_conv_norms_dict)
+logfname="normmatters_v${ver}_vgg11_ref80_wdoff_correction"
+CUDA_VISIBLE_DEVICES=0,1 python main.py --logname ${logfname} --nn_arch vgg11 --num_epochs 80 ${reproduce} --optimizer sgd_lastlayerwd0_0005_otherlayerswd0_lr0_1_with_correction --wd_conv_norms_dict nnr_v40_vgg11_ref80seed2018_wdon-02-08_08-57-19.conv_norms.pkl
+
+# Reproduce WD on mimicking with norm scheduling instead of learning rate scheduling (based on [WD on] norms - provide the file *.conv_norms.pkl produced by WD on training with the same seed to --wd_conv_norms_dict)
+logfname="normmatters_v${ver}_vgg11_ref80seed_wdoff_normsched_instead_lr"
+CUDA_VISIBLE_DEVICES=0,1 python main.py --logname ${logfname} --nn_arch vgg11 --num_epochs 80 ${reproduce} --optimizer sgd_lastlayerwd0_0005_otherlayerswd0_lr0_1_norm_sched_instead --wd_conv_norms_dict nnr_v40_vgg11_ref80seed2018_wdon-02-08_08-57-19.conv_norms.pkl --norm_lr_sched
+
+
