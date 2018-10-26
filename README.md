@@ -1,4 +1,5 @@
 # Convolutional networks using PyTorch
+**See https://github.com/eladhoffer/convNet.pytorch for updated version of this code**
 
 This is a complete training example for Deep Convolutional Networks on various datasets (ImageNet, Cifar10, Cifar100, MNIST).
 
