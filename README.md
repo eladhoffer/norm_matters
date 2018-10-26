@@ -1,7 +1,15 @@
-# Convolutional networks using PyTorch
+# Norm Matters
 **See https://github.com/eladhoffer/convNet.pytorch for updated version of this code**
 
-This is a complete training example for Deep Convolutional Networks on various datasets (ImageNet, Cifar10, Cifar100, MNIST).
+This code was was used to implement [Norm matters: efficient and accurate normalization schemes in deep networks - Hoffer, Banner, Golan, Soudry (2018): ](https://arxiv.org/abs/1803.01814)
+```
+@inproceedings{hoffer2018norm,
+  title={Norm matters: efficient and accurate normalization schemes in deep networks},
+  author={Hoffer, Elad and Banner, Ron and Golan, Itay and Soudry, Daniel},
+  booktitle={Advances in Neural Information Processing Systems},
+  year={2018}
+}
+```
 
 It is based off [imagenet example in pytorch](https://github.com/pytorch/examples/tree/master/imagenet) with some helpful additions such as:
   - Training on several datasets other than imagenet
